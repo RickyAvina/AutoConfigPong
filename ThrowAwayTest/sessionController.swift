@@ -174,7 +174,7 @@ class SessionController: NSObject, MCSessionDelegate, MCNearbyServiceBrowserDele
         let myString = "hello world" as NSString
         let myNSData =  myString.data(using: String.Encoding.utf8.rawValue)
         
-        let rString : NSString = NSString(data: myNSData!, encoding: String.Encoding.utf8.rawValue)!
+        let rString : NSString = NSString(data: data, encoding: String.Encoding.utf8.rawValue)!
         let output = rString as String
         print("output: \(output)")
         

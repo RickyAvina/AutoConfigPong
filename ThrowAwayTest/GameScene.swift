@@ -15,14 +15,23 @@ class GameScene: SKScene, SessionControllerDelegate {
     let sessionController = SessionController()
     
     var ball = SKSpriteNode()
+    var player = SKSpriteNode()
     var square = SKSpriteNode()
     var playerLabel = SKLabelNode()
+    
+    var leftWall = SKSpriteNode()
+    var rightWall = SKSpriteNode()
     
     override func didMove(to view: SKView) {
         sessionController.delegate = self
         
         ball = self.childNode(withName: "ball") as! SKSpriteNode
         ball.isHidden = true;
+        
+        player = self.childNode(withName: "player") as! SKSpriteNode
+        
+        leftWall = self.childNode(withName: "leftWall") as! SKSpriteNode
+        rightWall = self.childNode(withName: "rightWall") as! SKSpriteNode
         
         playerLabel.position = CGPoint(x: 0, y: -200)
         playerLabel.fontSize = 32
@@ -31,7 +40,21 @@ class GameScene: SKScene, SessionControllerDelegate {
     }
     
     override func update(_ currentTime: TimeInterval) {
-        // Called before each frame is rendered
+        if (ball.position.y > frame.height - 20){
+            do {
+                let myString : NSString = "hoah" as NSString
+                let myData = myString.data(using: String.Encoding.utf8.rawValue)
+                
+                try sessionController.sess().send(myData! as Data, toPeers: sessionController.connectedPeers, with: .reliable)
+            } catch let error as NSError{
+                let ac = UIAlertController(title: "Send error", message: error.localizedDescription, preferredStyle: .alert)
+                ac.addAction(UIAlertAction(title: "OK", style: .default))
+                let currentViewController :
+                    UIViewController=UIApplication.shared.keyWindow!.rootViewController!
+                currentViewController.present(ac, animated: true, completion: nil)
+            }
+
+        }
     }
     
     deinit {
@@ -48,7 +71,7 @@ class GameScene: SKScene, SessionControllerDelegate {
             } else {
                 playerLabel.text = "\(UIDevice.current.name)"
                 ball.isHidden = false;
-                ball.physicsBody?.applyImpulse(CGVector(dx: -2, dy: -2))
+                ball.physicsBody?.applyImpulse(CGVector(dx: -13, dy: -13))
             }
             
             do {
@@ -68,6 +91,21 @@ class GameScene: SKScene, SessionControllerDelegate {
         
         if sessionController.disconnectedPeers.count > 0 {
             playerLabel.text = "Awaiting player..."
+        }
+    }
+    
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        for touch in touches {
+            let location = touch.location(in: self) // location of finger
+            
+            player.run(SKAction.moveTo(x: location.x, duration: 0.2)) // finger lag
+        }
+    }
+    
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        for touch in touches {
+            let location = touch.location(in: self) // location of finger
+            player.run(SKAction.moveTo(x: location.x, duration: 0.2))  // finger lag
         }
     }
     
