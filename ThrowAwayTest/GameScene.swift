@@ -46,8 +46,8 @@ class GameScene: SKScene, SessionControllerDelegate {
                 
                 print("DATA SENT")
                 
-                let pointToSend : CGPoint = CGPoint(x: ball.position.x, y: ball.position.y)
-                let arrayToSend : [Any] = [pointToSend, ball.position.x]
+                let pointToSend : CGPoint = CGPoint(x: ball.position.x, y: frame.height)
+                let arrayToSend : [Any] = [pointToSend, ball.physicsBody?.velocity.dx ?? 20, ball.physicsBody?.velocity.dy ?? 20]
                 let data : Data = NSKeyedArchiver.archivedData(withRootObject: arrayToSend)
                 
                 try sessionController.sess().send(data, toPeers: sessionController.connectedPeers, with: .reliable)
@@ -76,7 +76,7 @@ class GameScene: SKScene, SessionControllerDelegate {
             } else {
                 playerLabel.text = "\(UIDevice.current.name)"
                 ball.isHidden = false;
-                ball.physicsBody?.applyImpulse(CGVector(dx: 0, dy: -13))
+                ball.physicsBody?.applyImpulse(CGVector(dx: -13, dy: -13))
             }
         }
         
@@ -101,9 +101,12 @@ class GameScene: SKScene, SessionControllerDelegate {
     }
     
     func didRecievePos(data: Data) {
-        let newData = NSKeyedUnarchiver.unarchiveObject(with: data) as [Any]
+        let newData = NSKeyedUnarchiver.unarchiveObject(with: data) as! [Any]
         print("NEW DATA")
-        print(newData.first)
+        
+        let ballLoc = newData.first! as! CGPoint
+        let ballVel = CGVector(dx: newData[1] as! Double, dy: newData[2] as! Double)
+        changeBall(loc: ballLoc, vel: ballVel)
     }
     
     func isFirstPlayer() -> Bool {
@@ -118,10 +121,9 @@ class GameScene: SKScene, SessionControllerDelegate {
            return false
     }
     
-    func changeBallLocation(loc: CGPoint){
+    func changeBall(loc: CGPoint, vel: CGVector){
         ball.position = loc
-        ball.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
-        ball.physicsBody?.applyImpulse(CGVector(dx: 0, dy: -13))
+        ball.physicsBody?.velocity = CGVector(dx: -vel.dx, dy: -vel.dy)
         ball.isHidden = false
     }
 }
