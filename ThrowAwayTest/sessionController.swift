@@ -21,6 +21,7 @@ import MultipeerConnectivity
 protocol SessionControllerDelegate{
     // Multipeer Connectivity session changed state - connecting, connected and disconnected peers changed
     func sessionDidChangeState()
+    func didRecievePos(data : Data)
 }
 
 /*!
@@ -38,11 +39,12 @@ class SessionController: NSObject, MCSessionDelegate, MCNearbyServiceBrowserDele
     
     // MARK: Public properties
     
+    var firstUser : String?
+    var hasRecievedData : Bool = false
+    
     func sess() -> MCSession {
         return session;
     }
-    
-    var firstUser : String?
     
     var connectedPeers: [MCPeerID] {
         get {
@@ -100,7 +102,6 @@ class SessionController: NSObject, MCSessionDelegate, MCNearbyServiceBrowserDele
         serviceBrowser = MCNearbyServiceBrowser(peer: peerID, serviceType: kMCSessionServiceType)
         
         super.init()
-        
         startServices()
     }
     
@@ -170,14 +171,9 @@ class SessionController: NSObject, MCSessionDelegate, MCNearbyServiceBrowserDele
     
     func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
         print("RECIEVED DATA!!")
+        hasRecievedData = false;
         
-        let myString = "hello world" as NSString
-        let myNSData =  myString.data(using: String.Encoding.utf8.rawValue)
-        
-        let rString : NSString = NSString(data: data, encoding: String.Encoding.utf8.rawValue)!
-        let output = rString as String
-        print("output: \(output)")
-        
+        delegate?.didRecievePos(data: data)
     }
     
     func session(_ session: MCSession, didStartReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, with progress: Progress) {

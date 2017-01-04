@@ -40,12 +40,17 @@ class GameScene: SKScene, SessionControllerDelegate {
     }
     
     override func update(_ currentTime: TimeInterval) {
-        if (ball.position.y > frame.height - 20){
+        if (ball.position.y > frame.height) && !sessionController.hasRecievedData {
+            sessionController.hasRecievedData = true
             do {
-                let myString : NSString = "hoah" as NSString
-                let myData = myString.data(using: String.Encoding.utf8.rawValue)
                 
-                try sessionController.sess().send(myData! as Data, toPeers: sessionController.connectedPeers, with: .reliable)
+                print("DATA SENT")
+                
+                let pointToSend : CGPoint = CGPoint(x: ball.position.x, y: ball.position.y)
+                let arrayToSend : [Any] = [pointToSend, ball.position.x]
+                let data : Data = NSKeyedArchiver.archivedData(withRootObject: arrayToSend)
+                
+                try sessionController.sess().send(data, toPeers: sessionController.connectedPeers, with: .reliable)
             } catch let error as NSError{
                 let ac = UIAlertController(title: "Send error", message: error.localizedDescription, preferredStyle: .alert)
                 ac.addAction(UIAlertAction(title: "OK", style: .default))
@@ -67,26 +72,12 @@ class GameScene: SKScene, SessionControllerDelegate {
 
             if (isFirstPlayer() == true){
                 playerLabel.text = "\((sessionController.firstUser)!)"
-                ball.isHidden = true;
+                ball.isHidden = true;   // should b true
             } else {
                 playerLabel.text = "\(UIDevice.current.name)"
                 ball.isHidden = false;
-                ball.physicsBody?.applyImpulse(CGVector(dx: -13, dy: -13))
+                ball.physicsBody?.applyImpulse(CGVector(dx: 0, dy: -13))
             }
-            
-            do {
-                let myString : NSString = "a" as NSString
-                let myData = myString.data(using: String.Encoding.utf8.rawValue)
-                
-                try sessionController.sess().send(myData! as Data, toPeers: sessionController.connectedPeers, with: .reliable)
-            } catch let error as NSError{
-                let ac = UIAlertController(title: "Send error", message: error.localizedDescription, preferredStyle: .alert)
-                ac.addAction(UIAlertAction(title: "OK", style: .default))
-                let currentViewController :
-                    UIViewController=UIApplication.shared.keyWindow!.rootViewController!
-                currentViewController.present(ac, animated: true, completion: nil)
-            }
-
         }
         
         if sessionController.disconnectedPeers.count > 0 {
@@ -109,6 +100,12 @@ class GameScene: SKScene, SessionControllerDelegate {
         }
     }
     
+    func didRecievePos(data: Data) {
+        let newData = NSKeyedUnarchiver.unarchiveObject(with: data) as [Any]
+        print("NEW DATA")
+        print(newData.first)
+    }
+    
     func isFirstPlayer() -> Bool {
         print("**********************")
         print("Me: \(UIDevice.current.name)\nOther: \(sessionController.connectedPeers.first?.displayName)\nFirst: \(sessionController.firstUser)")
@@ -119,5 +116,12 @@ class GameScene: SKScene, SessionControllerDelegate {
         }
             print("returned false")
            return false
+    }
+    
+    func changeBallLocation(loc: CGPoint){
+        ball.position = loc
+        ball.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
+        ball.physicsBody?.applyImpulse(CGVector(dx: 0, dy: -13))
+        ball.isHidden = false
     }
 }
