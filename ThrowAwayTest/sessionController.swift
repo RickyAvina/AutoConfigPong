@@ -22,6 +22,7 @@ protocol SessionControllerDelegate{
     // Multipeer Connectivity session changed state - connecting, connected and disconnected peers changed
     func sessionDidChangeState()
     func didRecievePos(data : Data)
+    func scoreChanged()
 }
 
 /*!
@@ -171,9 +172,18 @@ class SessionController: NSObject, MCSessionDelegate, MCNearbyServiceBrowserDele
     
     func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
         print("RECIEVED DATA!!")
-        hasRecievedData = false;
+        print(data.count)
         
-        delegate?.didRecievePos(data: data)
+        if data.count != 219 {
+            print("OFF SCREEN")
+            hasRecievedData = false
+            delegate?.didRecievePos(data: data)
+        } else {
+            print("THE SCORE HAS CHANGED")
+            delegate?.scoreChanged()
+        }
+        
+        
     }
     
     func session(_ session: MCSession, didStartReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, with progress: Progress) {

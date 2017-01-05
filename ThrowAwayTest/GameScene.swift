@@ -22,6 +22,8 @@ class GameScene: SKScene, SessionControllerDelegate {
     var leftWall = SKSpriteNode()
     var rightWall = SKSpriteNode()
     
+    var score : [Int] = [0,0]   // yourScore, enemyScore
+    
     override func didMove(to view: SKView) {
         sessionController.delegate = self
         
@@ -33,20 +35,48 @@ class GameScene: SKScene, SessionControllerDelegate {
         leftWall = self.childNode(withName: "leftWall") as! SKSpriteNode
         rightWall = self.childNode(withName: "rightWall") as! SKSpriteNode
         
-        playerLabel.position = CGPoint(x: 0, y: -200)
+        playerLabel.position = CGPoint(x: 0, y: 200)
         playerLabel.fontSize = 32
         playerLabel.text = "Awaiting Player..."
         self.addChild(playerLabel)
     }
     
+    func asynchrousWork(completion: ()->()){
+        
+    }
+    
     override func update(_ currentTime: TimeInterval) {
-        if (ball.position.y > frame.height) && !sessionController.hasRecievedData {
+        if (ball.position.y < -frame.height - 20) {
+            ball.position = CGPoint(x: 0, y: 0)
+            ball.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
+            
+            do {
+              //  self.score[1] += 1
+                
+                let arrayToSend : [Int] = []
+                let data : Data = NSKeyedArchiver.archivedData(withRootObject: arrayToSend)
+                
+                try self.sessionController.sess().send(data, toPeers: self.sessionController.connectedPeers, with: .reliable)
+                print("DATA SENT SCORE")
+
+            } catch let error as NSError{
+                let ac = UIAlertController(title: "Send error", message: error.localizedDescription, preferredStyle: .alert)
+                ac.addAction(UIAlertAction(title: "OK", style: .default))
+                let currentViewController :
+                    UIViewController=UIApplication.shared.keyWindow!.rootViewController!
+                currentViewController.present(ac, animated: true, completion: nil)
+            }
+            
+            restart()
+        }
+        
+        if (ball.position.y > frame.height - 15) && !sessionController.hasRecievedData {
             sessionController.hasRecievedData = true
             do {
                 
                 print("DATA SENT")
                 
-                let pointToSend : CGPoint = CGPoint(x: ball.position.x, y: frame.height)
+                let pointToSend : CGPoint = CGPoint(x: ball.position.x, y: frame.height-15)
                 let arrayToSend : [Any] = [pointToSend, ball.physicsBody?.velocity.dx ?? 20, ball.physicsBody?.velocity.dy ?? 20]
                 let data : Data = NSKeyedArchiver.archivedData(withRootObject: arrayToSend)
                 
@@ -58,7 +88,6 @@ class GameScene: SKScene, SessionControllerDelegate {
                     UIViewController=UIApplication.shared.keyWindow!.rootViewController!
                 currentViewController.present(ac, animated: true, completion: nil)
             }
-
         }
     }
     
@@ -69,14 +98,14 @@ class GameScene: SKScene, SessionControllerDelegate {
     
     func sessionDidChangeState() {
         if sessionController.connectedPeers.count > 0 {
-
+            
             if (isFirstPlayer() == true){
                 playerLabel.text = "\((sessionController.firstUser)!)"
                 ball.isHidden = true;   // should b true
             } else {
                 playerLabel.text = "\(UIDevice.current.name)"
                 ball.isHidden = false;
-                ball.physicsBody?.applyImpulse(CGVector(dx: -13, dy: -13))
+                ball.physicsBody?.applyImpulse(CGVector(dx: -20, dy: -20))
             }
         }
         
@@ -102,11 +131,17 @@ class GameScene: SKScene, SessionControllerDelegate {
     
     func didRecievePos(data: Data) {
         let newData = NSKeyedUnarchiver.unarchiveObject(with: data) as! [Any]
-        print("NEW DATA")
         
-        let ballLoc = newData.first! as! CGPoint
-        let ballVel = CGVector(dx: newData[1] as! Double, dy: newData[2] as! Double)
-        changeBall(loc: ballLoc, vel: ballVel)
+            print("NEW DATA // \(newData.count)")
+            let ballLoc = newData.first! as! CGPoint
+            let ballVel = CGVector(dx: newData[1] as! Double, dy: newData[2] as! Double)
+            changeBall(loc: ballLoc, vel: ballVel)
+    }
+    
+    func scoreChanged() {
+        print("SCORE CHANGED")
+        score[0] += 1
+        print("score: \(score)")
     }
     
     func isFirstPlayer() -> Bool {
@@ -117,13 +152,18 @@ class GameScene: SKScene, SessionControllerDelegate {
             print("returned true")
             return true
         }
-            print("returned false")
-           return false
+        print("returned false")
+        return false
     }
     
     func changeBall(loc: CGPoint, vel: CGVector){
         ball.position = loc
         ball.physicsBody?.velocity = CGVector(dx: -vel.dx, dy: -vel.dy)
         ball.isHidden = false
+    }
+    
+    func restart(){
+        print("RESTARTED")
+        ball.physicsBody?.applyImpulse(CGVector(dx: -20, dy: -20))
     }
 }
