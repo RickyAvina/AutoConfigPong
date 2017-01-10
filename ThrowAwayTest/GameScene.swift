@@ -17,7 +17,10 @@ class GameScene: SKScene, SessionControllerDelegate {
     var ball = SKSpriteNode()
     var player = SKSpriteNode()
     var square = SKSpriteNode()
+    
     var playerLabel = SKLabelNode()
+    
+    let delayInSeconds = 3.0
     
     var leftWall = SKSpriteNode()
     var rightWall = SKSpriteNode()
@@ -39,9 +42,6 @@ class GameScene: SKScene, SessionControllerDelegate {
         playerLabel.fontSize = 32
         playerLabel.text = "Awaiting Player..."
         self.addChild(playerLabel)
-    }
-    
-    func asynchrousWork(completion: ()->()){
         
     }
     
@@ -51,14 +51,13 @@ class GameScene: SKScene, SessionControllerDelegate {
             ball.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
             
             do {
-              //  self.score[1] += 1
-                
                 let arrayToSend : [Int] = []
                 let data : Data = NSKeyedArchiver.archivedData(withRootObject: arrayToSend)
                 
                 try self.sessionController.sess().send(data, toPeers: self.sessionController.connectedPeers, with: .reliable)
+            
                 print("DATA SENT SCORE")
-
+                
             } catch let error as NSError{
                 let ac = UIAlertController(title: "Send error", message: error.localizedDescription, preferredStyle: .alert)
                 ac.addAction(UIAlertAction(title: "OK", style: .default))
@@ -77,7 +76,7 @@ class GameScene: SKScene, SessionControllerDelegate {
                 print("DATA SENT")
                 
                 let pointToSend : CGPoint = CGPoint(x: ball.position.x, y: frame.height-15)
-                let arrayToSend : [Any] = [pointToSend, ball.physicsBody?.velocity.dx ?? 20, ball.physicsBody?.velocity.dy ?? 20]
+                let arrayToSend : [Any] = [pointToSend, ball.physicsBody?.velocity.dx ?? 20, (ball.physicsBody?.velocity.dy)! + 1]
                 let data : Data = NSKeyedArchiver.archivedData(withRootObject: arrayToSend)
                 
                 try sessionController.sess().send(data, toPeers: sessionController.connectedPeers, with: .reliable)
@@ -105,7 +104,14 @@ class GameScene: SKScene, SessionControllerDelegate {
             } else {
                 playerLabel.text = "\(UIDevice.current.name)"
                 ball.isHidden = false;
-                ball.physicsBody?.applyImpulse(CGVector(dx: -20, dy: -20))
+                
+                DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + delayInSeconds){
+                    var randomNumber : Int = Int(arc4random_uniform(16)) + 2
+                    if (randomNumber % 2 == 0){
+                        randomNumber = randomNumber * -1
+                    }
+                    self.ball.physicsBody?.applyImpulse(CGVector(dx: randomNumber, dy: -20))
+                }
             }
         }
         
@@ -132,10 +138,10 @@ class GameScene: SKScene, SessionControllerDelegate {
     func didRecievePos(data: Data) {
         let newData = NSKeyedUnarchiver.unarchiveObject(with: data) as! [Any]
         
-            print("NEW DATA // \(newData.count)")
-            let ballLoc = newData.first! as! CGPoint
-            let ballVel = CGVector(dx: newData[1] as! Double, dy: newData[2] as! Double)
-            changeBall(loc: ballLoc, vel: ballVel)
+        print("NEW DATA // \(newData.count)")
+        let ballLoc = newData.first! as! CGPoint
+        let ballVel = CGVector(dx: newData[1] as! Double, dy: newData[2] as! Double)
+        changeBall(loc: ballLoc, vel: ballVel)
     }
     
     func scoreChanged() {
@@ -164,6 +170,12 @@ class GameScene: SKScene, SessionControllerDelegate {
     
     func restart(){
         print("RESTARTED")
-        ball.physicsBody?.applyImpulse(CGVector(dx: -20, dy: -20))
+        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 2.0){
+            var randomNumber : Int = Int(arc4random_uniform(16)) + 2
+            if (randomNumber % 2 == 0){
+                randomNumber = randomNumber * -1
+            }
+            self.ball.physicsBody?.applyImpulse(CGVector(dx: randomNumber, dy: -28))
+        }
     }
 }

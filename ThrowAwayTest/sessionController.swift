@@ -166,7 +166,6 @@ class SessionController: NSObject, MCSessionDelegate, MCNearbyServiceBrowserDele
         }
             
         delegate?.sessionDidChangeState()
-
         
     }
     
@@ -182,8 +181,6 @@ class SessionController: NSObject, MCSessionDelegate, MCNearbyServiceBrowserDele
             print("THE SCORE HAS CHANGED")
             delegate?.scoreChanged()
         }
-        
-        
     }
     
     func session(_ session: MCSession, didStartReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, with progress: Progress) {
